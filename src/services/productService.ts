@@ -1,6 +1,6 @@
 import { Product, IProduct } from "../models/Product";
 
-interface CreateProductInput {
+export interface CreateProductInput {
   name: string;
   description: string;
   price: number;
@@ -18,13 +18,53 @@ interface UpdateProductInput {
 
 export const getAllProducts = async (
   page: number,
-  limit: number
+  limit: number,
+  search?: string 
 ): Promise<{ products: IProduct[]; totalItems: number }> => {
   const skip = (page - 1) * limit;
 
-  const products = await Product.find().skip(skip).limit(limit).lean();
+  console.log(search,'ss')
+  const pipeline = [
+    {
+      $match: search
+        ? {
+            $or: [
+              { name: { $regex: search, $options: "i" } },
+              { description: { $regex: search, $options: "i" } },
+            ],
+          }
+        : {}, 
+    },
+    {
+      $skip: skip,
+    },
+    {
+      $limit: limit,
+    },
+  ];
 
-  const totalItems = await Product.countDocuments();
+ 
+  const products = await Product.aggregate(pipeline).exec();
+
+  
+  const totalItemsPipeline = [
+    {
+      $match: search
+        ? {
+            $or: [
+              { name: { $regex: search, $options: "i" } },
+              { description: { $regex: search, $options: "i" } },
+            ],
+          }
+        : {},
+    },
+    {
+      $count: "count",
+    },
+  ];
+
+  const totalItemsResult = await Product.aggregate(totalItemsPipeline).exec();
+  const totalItems = totalItemsResult[0]?.count || 0;
 
   return {
     products,

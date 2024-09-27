@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Cart, ICart } from "../models/Cart";
 import { Product } from "../models/Product";
 import { IUser } from "../models/User";
+import { CreateProductInput } from "./productService";
 
 interface AddToCartInput {
   userId: string;
@@ -15,10 +16,16 @@ interface UpdateCartInput {
   quantity: number;
 }
 
+interface CartItem {
+  product: any;
+  quantity: number;
+}
+
 export const getCartByUserId = async (
   userId: string
 ): Promise<ICart | null> => {
-  return await Cart.findOne({ user: userId }).populate("items.product").lean();
+  const id = new mongoose.Types.ObjectId(userId);
+  return await Cart.findOne({ user: id }).populate("items.product").lean();
 };
 
 export const addToCart = async (input: AddToCartInput): Promise<ICart> => {
@@ -99,3 +106,89 @@ export const removeCartItem = async (
 export const clearCart = async (userId: string): Promise<void> => {
   await Cart.findOneAndDelete({ user: userId });
 };
+
+export const massAddItemsToCart = async (userId: string, items: CartItem[]) => {
+  let cart = await Cart.findOne({ user: userId });
+  console.log(userId, 'user')
+  if (!cart) {
+    cart = new Cart({ user: userId, items: [] });
+  }
+  const existingProductIds = cart.items.map(item => item.product.toString());
+  const newItems = items.filter(
+    (item) => !existingProductIds.includes(item.product._id)
+  );
+
+  if(newItems.length){
+    items.map((item) => {
+      cart.items.push({
+        product: item.product._id,
+        quantity: item.quantity,
+      });
+    });
+  }
+
+
+  await cart.save();
+
+  return cart;
+};
+
+export const checkoutService = async (userId: string) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+
+    const cart = await Cart.findOne({ user: userId }).session(session);
+
+    if (!cart || cart.items.length === 0) {
+      throw new Error("Cart is empty");
+    }
+
+    const productIds = cart.items.map((item) => item.product);
+
+    const products = await Product.find({ _id: { $in: productIds } }).session(session);
+
+    const bulkOperations = [];
+
+    // Validate stock and build bulk operations to decrease stock
+    for (const cartItem of cart.items) {
+      const product = products.find((p) => p._id.toString() === cartItem.product.toString());
+
+      if (!product) {
+        await session.abortTransaction();
+        throw new Error(`Product with ID ${cartItem.product} not found`);
+      }
+
+      if (product.stock < cartItem.quantity) {
+        await session.abortTransaction();
+        throw new Error(`Insufficient stock for product: ${product.name}`);
+      }
+
+      // Prepare bulk operation to decrease stock
+      bulkOperations.push({
+        updateOne: {
+          filter: { _id: product._id },
+          update: { $inc: { stock: -cartItem.quantity } },
+        },
+      });
+    }
+
+    // Perform the bulk write to update product stocks
+    await Product.bulkWrite(bulkOperations, { session });
+
+    // Clear the user's cart after successful checkout
+    cart.items = [];
+    await cart.save({ session });
+
+    // Commit the transaction
+    await session.commitTransaction();
+  } catch (error) {
+    // Abort the transaction in case of any error
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
