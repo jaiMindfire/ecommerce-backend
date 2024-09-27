@@ -41,11 +41,12 @@ export const login = async (
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const token = await loginUser(req.body);
+    const data = await loginUser(req.body);
     res.status(200).json({
       message: "Logged in successfully",
-      token,
+      token: data.token,
       success: true,
+      userName: data.userName,
     });
   } catch (error) {
     res.status(401).json({ message: (error as Error).message });

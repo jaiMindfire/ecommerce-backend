@@ -1,10 +1,11 @@
-import express from "express";
+import express, { Router } from "express";
 import {
   getCart,
   addItemToCart,
   updateCart,
   removeItemFromCart,
   checkoutCart,
+  massAddToCart,
 } from "../controllers/cartController";
 import { authenticateJWT } from "../middlewares/authentication";
 import { body, param } from "express-validator";
@@ -45,5 +46,13 @@ router.delete(
 // @desc    Checkout cart
 // @access  User
 router.post("/checkout", checkoutCart);
+
+// @route   POST /api/cart/mass-add
+// @desc    Mass insert
+// @access  User
+
+router.post("/mass-add", massAddToCart)
+
+
 
 export default router;

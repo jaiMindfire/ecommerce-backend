@@ -5,6 +5,8 @@ import {
   updateCartItem,
   removeCartItem,
   clearCart,
+  massAddItemsToCart,
+  checkoutService,
 } from "../services/cartService";
 import { validationResult } from "express-validator";
 
@@ -101,9 +103,29 @@ export const checkoutCart = async (
   next: NextFunction
 ) => {
   try {
-    await clearCart(req.userData.id);
-    res.json({ message: "Checkout successful, cart cleared" });
+    await checkoutService(req.userData.id);
+    res.status(200).json({ message: "Checkout completed successfully" });
   } catch (error) {
     next(error);
+  }
+};
+
+export const massAddToCart = async (req: Request, res: Response) => {
+  const { items } = req.body;
+  const userId = req.userData.id;
+
+  try {
+    const updatedCart = await massAddItemsToCart(userId, items);
+    res.status(200).json({
+      success: true,
+      message: "Cart updated successfully",
+      data: updatedCart,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating the cart",
+    });
   }
 };

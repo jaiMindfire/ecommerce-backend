@@ -17,8 +17,9 @@ export const getProducts = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string || "";
 
-    const { products, totalItems } = await getAllProducts(page, limit);
+    const { products, totalItems } = await getAllProducts(page, limit, search);
 
     res.status(200).json({
       success: true,

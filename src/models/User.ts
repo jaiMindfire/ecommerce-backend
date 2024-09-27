@@ -13,7 +13,7 @@ const UserSchema: Schema<IUser> = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: [true, "Username is required"],
+      required: [false, "Username is required"],
       trim: true,
     },
     email: {
