@@ -17,13 +17,17 @@ interface LoginInput {
 }
 
 export const registerUser = async (input: RegisterInput): Promise<IUser> => {
+  const existingUser = await User.findOne({ email: input.email });
+  if (existingUser) {
+    throw new Error("User already exists with this email");
+  }
   const user = new User(input);
   return await user.save();
 };
 
-export const loginUser = async (input: LoginInput): Promise<string> => {
+export const loginUser = async (input: LoginInput): Promise<any> => {
   const user = await User.findOne({ email: input.email });
-  if (!user) throw new Error("Invalid credentials");
+  if (!user) throw new Error("Please sign up");
 
   const isMatch = await user.comparePassword(input.password);
   if (!isMatch) throw new Error("Invalid credentials");
@@ -33,7 +37,7 @@ export const loginUser = async (input: LoginInput): Promise<string> => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
-  return token;
+  return { token, userName: user.email };
 };
 
 export const getUserById = async (id: string): Promise<IUser | null> => {
