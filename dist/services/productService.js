@@ -9,22 +9,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchProducts = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductById = exports.getAllProducts = void 0;
+exports.getCategories = exports.searchProducts = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductById = exports.getAllProducts = void 0;
 const Product_1 = require("../models/Product");
-const getAllProducts = (page, limit, search) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllProducts = (page, limit, search, minPrice, maxPrice, minRating, categories) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
+    console.log(minPrice, maxPrice, minRating, categories);
     const skip = (page - 1) * limit;
-    console.log(search, 'ss');
+    const match = {};
+    if (search) {
+        match.$or = [
+            { name: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+        ];
+    }
+    if (minPrice || maxPrice) {
+        match.price = {};
+        if (minPrice) {
+            match.price.$gte = minPrice;
+        }
+        if (maxPrice) {
+            match.price.$lte = maxPrice;
+        }
+    }
+    if (minRating) {
+        match.rating = { $gte: minRating };
+    }
+    if (categories && categories.length > 0) {
+        match.category = { $in: categories };
+    }
     const pipeline = [
         {
-            $match: search
-                ? {
-                    $or: [
-                        { name: { $regex: search, $options: "i" } },
-                        { description: { $regex: search, $options: "i" } },
-                    ],
-                }
-                : {},
+            $match: match,
         },
         {
             $skip: skip,
@@ -36,14 +51,7 @@ const getAllProducts = (page, limit, search) => __awaiter(void 0, void 0, void 0
     const products = yield Product_1.Product.aggregate(pipeline).exec();
     const totalItemsPipeline = [
         {
-            $match: search
-                ? {
-                    $or: [
-                        { name: { $regex: search, $options: "i" } },
-                        { description: { $regex: search, $options: "i" } },
-                    ],
-                }
-                : {},
+            $match: match,
         },
         {
             $count: "count",
@@ -78,3 +86,7 @@ const searchProducts = (query) => __awaiter(void 0, void 0, void 0, function* ()
     return yield Product_1.Product.find({ $text: { $search: query } }).lean();
 });
 exports.searchProducts = searchProducts;
+const getCategories = () => __awaiter(void 0, void 0, void 0, function* () {
+    return yield Product_1.Product.distinct('category');
+});
+exports.getCategories = getCategories;

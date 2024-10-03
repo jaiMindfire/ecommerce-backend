@@ -9,15 +9,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchProductController = exports.deleteProductController = exports.updateProductController = exports.createNewProduct = exports.getProduct = exports.getProducts = void 0;
+exports.getCategoriesController = exports.searchProductController = exports.deleteProductController = exports.updateProductController = exports.createNewProduct = exports.getProduct = exports.getProducts = void 0;
 const productService_1 = require("../services/productService");
 const express_validator_1 = require("express-validator");
 const getProducts = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || "";
-        const { products, totalItems } = yield (0, productService_1.getAllProducts)(page, limit, search);
+        const priceRange = req.query.priceRange || "";
+        const [minPrice, maxPrice] = priceRange.split(",").map(Number);
+        console.log(typeof req.query.categories, "ddd");
+        const categories = req.query.categories
+            ? (_a = req.query.categories) === null || _a === void 0 ? void 0 : _a.split(",")
+            : [];
+        console.log(categories, "dcdc");
+        const minRating = parseInt(req.query.rating) || 0;
+        const { products, totalItems } = yield (0, productService_1.getAllProducts)(page, limit, search, minPrice, maxPrice, minRating, categories);
         res.status(200).json({
             success: true,
             data: products,
@@ -103,3 +112,13 @@ const searchProductController = (req, res, next) => __awaiter(void 0, void 0, vo
     }
 });
 exports.searchProductController = searchProductController;
+const getCategoriesController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const categories = yield (0, productService_1.getCategories)();
+        return res.status(200).json(categories);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.getCategoriesController = getCategoriesController;

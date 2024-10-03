@@ -32,6 +32,12 @@ const ProductSchema = new mongoose_1.default.Schema({
         required: [true, "Product stock is required"],
         min: [0, "Stock cannot be negative"],
     },
+    category: {
+        type: String,
+        trim: true,
+        required: [true, "Product category is required"],
+    },
+    rating: { type: Number, required: true, min: 1, max: 5 },
 }, { timestamps: true });
 ProductSchema.index({ name: "text", description: "text" });
 exports.Product = mongoose_1.default.model("Product", ProductSchema);
