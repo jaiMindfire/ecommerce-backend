@@ -13,6 +13,10 @@ const router = express_1.default.Router();
 // @desc    Get all products
 // @access  Public
 router.get("/", productController_1.getProducts);
+// @route   GET /api/products/categories
+// @desc    get all categories
+// @access  Public
+router.get("/categories", productController_1.getCategoriesController);
 // @route   GET /api/products/:id
 // @desc    Get product by ID
 // @access  Public

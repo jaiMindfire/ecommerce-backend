@@ -6,6 +6,7 @@ import {
   updateProductController,
   deleteProductController,
   searchProductController,
+  getCategoriesController,
 } from "../controllers/productController";
 import { authenticateJWT } from "../middlewares/authentication";
 import { authorizeRoles } from "../middlewares/authorization";
@@ -17,6 +18,11 @@ const router = express.Router();
 // @desc    Get all products
 // @access  Public
 router.get("/", getProducts);
+
+// @route   GET /api/products/categories
+// @desc    get all categories
+// @access  Public
+router.get("/categories", getCategoriesController);
 
 // @route   GET /api/products/:id
 // @desc    Get product by ID

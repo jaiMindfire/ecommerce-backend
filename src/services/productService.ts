@@ -19,21 +19,45 @@ interface UpdateProductInput {
 export const getAllProducts = async (
   page: number,
   limit: number,
-  search?: string 
+  search?: string,
+  minPrice?: number,
+  maxPrice?: number,
+  minRating?: number,
+  categories?: string[],
 ): Promise<{ products: IProduct[]; totalItems: number }> => {
+  console.log(minPrice, maxPrice, minRating, categories)
   const skip = (page - 1) * limit;
 
-  console.log(search,'ss')
+  const match: any = {};
+
+  if (search) {
+    match.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (minPrice || maxPrice) {
+    match.price = {};
+    if (minPrice) {
+      match.price.$gte = minPrice;
+    }
+    if (maxPrice) {
+      match.price.$lte = maxPrice;
+    }
+  }
+
+  if (minRating) {
+    match.rating = { $gte: minRating };
+  }
+
+  if (categories && categories.length > 0) {
+    match.category = { $in: categories }; 
+  }
+
   const pipeline = [
     {
-      $match: search
-        ? {
-            $or: [
-              { name: { $regex: search, $options: "i" } },
-              { description: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {}, 
+      $match: match,
     },
     {
       $skip: skip,
@@ -43,20 +67,11 @@ export const getAllProducts = async (
     },
   ];
 
- 
   const products = await Product.aggregate(pipeline).exec();
 
-  
   const totalItemsPipeline = [
     {
-      $match: search
-        ? {
-            $or: [
-              { name: { $regex: search, $options: "i" } },
-              { description: { $regex: search, $options: "i" } },
-            ],
-          }
-        : {},
+      $match: match,
     },
     {
       $count: "count",
@@ -71,6 +86,8 @@ export const getAllProducts = async (
     totalItems,
   };
 };
+
+
 
 export const getProductById = async (id: string): Promise<IProduct | null> => {
   return await Product.findById(id).lean();
@@ -97,3 +114,7 @@ export const deleteProduct = async (id: string): Promise<IProduct | null> => {
 export const searchProducts = async (query: string): Promise<IProduct[]> => {
   return await Product.find({ $text: { $search: query } }).lean();
 };
+
+export const getCategories = async () => {
+  return await Product.distinct('category');
+}

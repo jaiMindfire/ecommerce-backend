@@ -6,6 +6,7 @@ import {
   updateProduct,
   deleteProduct,
   searchProducts,
+  getCategories,
 } from "../services/productService";
 import { validationResult } from "express-validator";
 
@@ -17,9 +18,26 @@ export const getProducts = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const search = req.query.search as string || "";
+    const search = (req.query.search as string) || "";
 
-    const { products, totalItems } = await getAllProducts(page, limit, search);
+    const priceRange = (req.query.priceRange as string) || "";
+    const [minPrice, maxPrice] = priceRange.split(",").map(Number);
+    console.log(typeof req.query.categories, "ddd");
+    const categories = req.query.categories
+      ? (req.query.categories as string)?.split(",")
+      : [];
+    console.log(categories, "dcdc");
+    const minRating = parseInt(req.query.rating as string) || 0;
+
+    const { products, totalItems } = await getAllProducts(
+      page,
+      limit,
+      search,
+      minPrice,
+      maxPrice,
+      minRating,
+      categories
+    );
 
     res.status(200).json({
       success: true,
@@ -34,6 +52,7 @@ export const getProducts = async (
     next(error);
   }
 };
+
 export const getProduct = async (
   req: Request,
   res: Response,
@@ -116,6 +135,19 @@ export const searchProductController = async (
 
     const products = await searchProducts(query);
     res.json(products);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCategoriesController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const categories = await getCategories();
+    return res.status(200).json(categories);
   } catch (error) {
     next(error);
   }

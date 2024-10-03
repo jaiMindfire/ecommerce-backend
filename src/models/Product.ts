@@ -7,6 +7,8 @@ export interface IProduct extends Document {
   price: number;
   imageUrl: string;
   stock: number;
+  category: string;
+  rating: number;
 }
 
 const ProductSchema: Schema<IProduct> = new mongoose.Schema(
@@ -37,6 +39,12 @@ const ProductSchema: Schema<IProduct> = new mongoose.Schema(
       required: [true, "Product stock is required"],
       min: [0, "Stock cannot be negative"],
     },
+    category: {
+      type: String,
+      trim: true,
+      required: [true, "Product category is required"],
+    },
+    rating: { type: Number, required: true, min: 1, max: 5 },
   },
   { timestamps: true }
 );
