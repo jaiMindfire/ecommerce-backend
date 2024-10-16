@@ -1,4 +1,7 @@
+//3rd Party Imports
 import { Request, Response, NextFunction } from "express";
+import { validationResult } from "express-validator";
+//Static Imports
 import {
   getCartByUserId,
   addToCart,
@@ -7,9 +10,9 @@ import {
   clearCart,
   massAddItemsToCart,
   checkoutService,
-} from "../services/cartService";
-import { validationResult } from "express-validator";
+} from "@services/cartService";
 
+//get the current authenticated user's cart items
 export const getCart = async (
   req: Request,
   res: Response,
@@ -18,21 +21,23 @@ export const getCart = async (
   try {
     const cart = await getCartByUserId(req.userData.id);
     if (!cart) return res.status(404).json({ message: "Cart not found" });
-
     res.json(cart);
   } catch (error) {
     next(error);
   }
 };
 
+// Add an item to the cart
 export const addItemToCart = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
+    // Check for validation errors in the request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      // If there are errors, return a 400 status with the errors
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -52,12 +57,14 @@ export const addItemToCart = async (
   }
 };
 
+// Update an item in the cart
 export const updateCart = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
+    // Check for validation errors in the request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -79,6 +86,7 @@ export const updateCart = async (
   }
 };
 
+// Remove an item from the cart
 export const removeItemFromCart = async (
   req: Request,
   res: Response,
@@ -97,6 +105,7 @@ export const removeItemFromCart = async (
   }
 };
 
+// Controller for doing checkout flow
 export const checkoutCart = async (
   req: Request,
   res: Response,
@@ -110,6 +119,7 @@ export const checkoutCart = async (
   }
 };
 
+//Add items to cart in bulk
 export const massAddToCart = async (req: Request, res: Response) => {
   const { items } = req.body;
   const userId = req.userData.id;
