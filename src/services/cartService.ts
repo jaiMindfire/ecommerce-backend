@@ -1,9 +1,11 @@
-//3rd Party Imports
+// 3rd Party Imports
 import mongoose from "mongoose";
-//Static Imports
+
+// Static Imports
 import { Cart, ICart } from "@models/Cart";
 import { Product } from "@models/Product";
 import { handleDbError } from "@utils/databaseErrorHandler";
+import { CustomError } from "@utils/customError";
 
 interface AddToCartInput {
   userId: string;
@@ -28,7 +30,6 @@ export const getCartByUserId = async (
 ): Promise<ICart | null> => {
   try {
     const id = new mongoose.Types.ObjectId(userId);
-    // Uses Mongoose to find the cart, populating the product details in the items.
     return await Cart.findOne({ user: id }).populate("items.product").lean();
   } catch (error) {
     handleDbError(error);
@@ -44,11 +45,11 @@ export const addToCart = async (
 
   try {
     const product = await Product.findById(productId);
-    if (!product) throw new Error("Product not found");
-    if (product.stock < quantity) throw new Error("Insufficient stock");
+    if (!product) throw new CustomError("Product not found", 404);
+    if (product.stock < quantity)
+      throw new CustomError("Insufficient stock", 400);
 
     let cart = await Cart.findOne({ user: userId });
-    // If no cart exists for the user, create a new one.
     if (!cart) {
       cart = new Cart({
         user: userId,
@@ -58,11 +59,9 @@ export const addToCart = async (
       const itemIndex = cart.items.findIndex(
         (item) => item?.product.toString() === productId
       );
-      // If the item already exists, update its quantity.
       if (itemIndex > -1) {
         cart.items[itemIndex].quantity += quantity;
       } else {
-        // If the item does not exist, add it to the cart.
         const productObjectId = new mongoose.Types.ObjectId(productId);
         cart.items.push({
           product: productObjectId,
@@ -71,10 +70,12 @@ export const addToCart = async (
       }
     }
 
-    // Save the cart after modifications and populate product details.
     await cart.save();
     return await cart.populate("items.product");
   } catch (error) {
+    if (error instanceof CustomError) {
+      throw error;
+    }
     handleDbError(error);
     return null;
   }
@@ -88,19 +89,19 @@ export const updateCartItem = async (
 
   try {
     const product = await Product.findById(productId);
-    if (!product) throw new Error("Product not found");
-    if (product.stock < quantity) throw new Error("Insufficient stock");
+    if (!product) throw new CustomError("Product not found", 404);
+    if (product.stock < quantity)
+      throw new CustomError("Insufficient stock", 400);
 
     const cart = await Cart.findOne({ user: userId });
-    if (!cart) throw new Error("Cart not found");
+    if (!cart) throw new CustomError("Cart not found", 404);
 
     const itemIndex = cart.items.findIndex(
       (item) => item.product.toString() === productId
     );
 
-    if (itemIndex === -1) throw new Error("Product not in cart");
+    if (itemIndex === -1) throw new CustomError("Product not in cart", 404);
 
-    // Remove the item if quantity is zero, otherwise update its quantity.
     if (quantity === 0) {
       cart.items.splice(itemIndex, 1);
     } else {
@@ -110,6 +111,9 @@ export const updateCartItem = async (
     await cart.save();
     return await cart.populate("items.product");
   } catch (error) {
+    if (error instanceof CustomError) {
+      throw error;
+    }
     handleDbError(error);
     return null;
   }
@@ -122,9 +126,8 @@ export const removeCartItem = async (
 ): Promise<ICart | null> => {
   try {
     const cart = await Cart.findOne({ user: userId });
-    if (!cart) throw new Error("Cart not found");
+    if (!cart) throw new CustomError("Cart not found", 404);
 
-    // Filters out the item to be removed.
     cart.items = cart.items.filter(
       (item) => item.product.toString() !== productId
     );
@@ -132,6 +135,9 @@ export const removeCartItem = async (
     await cart.save();
     return await cart.populate("items.product");
   } catch (error) {
+    if (error instanceof CustomError) {
+      throw error;
+    }
     handleDbError(error);
     return null;
   }
@@ -151,7 +157,6 @@ export const massAddItemsToCart = async (userId: string, items: CartItem[]) => {
   try {
     let cart = await Cart.findOne({ user: userId });
     if (!cart) {
-      // Creates a new cart if none exists.
       cart = new Cart({ user: userId, items: [] });
     }
     const existingProductIds = cart.items.map((item) =>
@@ -178,55 +183,47 @@ export const massAddItemsToCart = async (userId: string, items: CartItem[]) => {
   }
 };
 
-/**
- * Processes the checkout by reducing product stock according to cart items,
- * and clears the cart after successful checkout.
- * Uses a transaction to ensure data integrity.
- */
+// Processes the checkout by reducing product stock according to cart items, and clears the cart after successful checkout.
+//Uses a transaction to ensure data integrity.
 export const checkoutService = async (userId: string): Promise<void> => {
-  // Start a new MongoDB session for transaction management
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // Retrieve the user's cart within the transaction session
     const cart = await Cart.findOne({ user: userId }).session(session);
 
-    // Check if the cart exists and contains items
     if (!cart || cart.items.length === 0) {
-      throw new Error("Cart is empty"); 
+      throw new CustomError("Cart is empty", 400);
     }
 
-    // Extract product IDs from the cart items for stock checking
     const productIds = cart.items.map((item) => item.product);
-    // Fetch the products from the database to check their stock levels
     const products = await Product.find({ _id: { $in: productIds } }).session(
       session
     );
 
-    // Prepare an array to hold bulk update operations for product stock
     const bulkOperations = [];
 
-    // Iterate through each item in the cart to validate stock and prepare updates
     for (const cartItem of cart.items) {
-      // Find the corresponding product in the fetched products
       const product = products.find(
         (p) => p._id.toString() === cartItem.product.toString()
       );
 
-      // If the product is not found, abort the transaction and throw an error
       if (!product) {
         await session.abortTransaction();
-        throw new Error(`Product with ID ${cartItem.product} not found`);
+        throw new CustomError(
+          `Product with ID ${cartItem.product} not found`,
+          404
+        );
       }
 
-      // Check if there is sufficient stock for the item being purchased
       if (product.stock < cartItem.quantity) {
         await session.abortTransaction();
-        throw new Error(`Insufficient stock for product: ${product.name}`);
+        throw new CustomError(
+          `Insufficient stock for product: ${product.name}`,
+          400
+        );
       }
 
-      // Prepare a bulk operation to decrement the product stock
       bulkOperations.push({
         updateOne: {
           filter: { _id: product._id },
@@ -235,20 +232,17 @@ export const checkoutService = async (userId: string): Promise<void> => {
       });
     }
 
-    // Execute all stock updates in a single operation for efficiency
     await Product.bulkWrite(bulkOperations, { session });
-    // Clear the cart items after successful checkout
     cart.items = [];
-    // Save the updated cart state within the transaction session
     await cart.save({ session });
-    // Commit the transaction to apply all changes
     await session.commitTransaction();
   } catch (error) {
-    // Roll back the transaction on error
     await session.abortTransaction();
+    if (error instanceof CustomError) {
+      throw error;
+    }
     handleDbError(error);
   } finally {
-    // End the session regardless of the transaction outcome
     session.endSession();
   }
 };
