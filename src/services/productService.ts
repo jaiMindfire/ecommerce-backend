@@ -3,6 +3,7 @@ import mongoose, { PipelineStage } from "mongoose";
 //Static Imports
 import { Product, IProduct } from "@models/Product";
 import { handleDbError } from "@utils/databaseErrorHandler";
+import { redisClient } from "src/config/redis";
 
 export interface CreateProductInput {
   name: string;
@@ -31,66 +32,88 @@ export const getAllProducts = async (
   categories?: string[]
 ): Promise<{ products: IProduct[]; totalItems: number }> => {
   try {
-    const skip = (page - 1) * limit; // Calculate the number of documents to skip for pagination
-    const match: any = {}; // Object to build query conditions
+    const cacheKey = `products:page=${page}&limit=${limit}&search=${search}&minPrice=${minPrice}&maxPrice=${maxPrice}&minRating=${minRating}&categories=${categories?.join(',')}`;
+    
+    // Try to get cached data
+    const cachedProducts = await redisClient.get(cacheKey);
+    
+    if (cachedProducts) {
+      console.log('cached')
+      return JSON.parse(cachedProducts); // Return cached products if found
+    }
 
-    // Add search criteria if provided
+    const skip = (page - 1) * limit;
+    const match: any = {};
+
     if (search) {
       match.$or = [
         { name: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
     }
-
-    // Add price range filtering if provided
     if (minPrice || maxPrice) {
       match.price = {};
-      if (minPrice) match.price.$gte = minPrice; // Greater than or equal to minPrice
-      if (maxPrice) match.price.$lte = maxPrice; // Less than or equal to maxPrice
+      if (minPrice) match.price.$gte = minPrice;
+      if (maxPrice) match.price.$lte = maxPrice;
     }
-
-    // Add minimum rating filtering if provided
     if (minRating) {
-      match.rating = { $gte: minRating }; // Greater than or equal to minRating
+      match.rating = { $gte: minRating };
     }
-
-    // Add category filtering if provided
     if (categories && categories.length > 0) {
-      match.category = { $in: categories }; // Match any of the provided categories
+      match.category = { $in: categories };
     }
 
-    // MongoDB aggregation pipeline to get filtered, sorted, and paginated products
     const pipeline: PipelineStage[] = [
-      { $match: match }, // Match products based on the constructed query
-      { $sort: { price: -1 } }, // Sort by price in descending order
-      { $skip: skip }, // Skip the calculated number of documents for pagination
-      { $limit: limit }, // Limit the number of documents returned
+      { $match: match },
+      { $sort: { price: -1 } },
+      { $skip: skip },
+      { $limit: limit },
     ];
 
-    // Execute the aggregation pipeline
     const products = await Product.aggregate(pipeline).exec();
-
-    // Pipeline to count total matching items for pagination
     const totalItemsPipeline = [{ $match: match }, { $count: "count" }];
     const totalItemsResult = await Product.aggregate(totalItemsPipeline).exec();
-    const totalItems = totalItemsResult[0]?.count || 0; // Get the total count
+    const totalItems = totalItemsResult[0]?.count || 0;
 
-    return { products, totalItems }; // Return the products and total count
+    // Cache the product list and total items for the given query
+    await redisClient.set(cacheKey, JSON.stringify({ products, totalItems }), { EX: 3600 }); // Cache expires after 1 hour
+
+    return { products, totalItems };
   } catch (error) {
-    handleDbError(error); // Handle any database errors
-    return { products: [], totalItems: 0 }; // Return empty results on error
+    handleDbError(error);
+    return { products: [], totalItems: 0 };
   }
 };
+
 
 // Retrieves a single product by its ID
 export const getProductById = async (id: string): Promise<IProduct | null> => {
   try {
-    return await Product.findById(id).lean(); // Use .lean() for faster queries without Mongoose documents
+    const cacheKey = `product:${id}`; // Create a cache key for Redis
+
+    // Try to get the product from Redis
+    const cachedProduct = await redisClient.get(cacheKey);
+    
+    if (cachedProduct) {
+      console.log('cahched prd')
+      return JSON.parse(cachedProduct); // Return cached product if found
+    }
+    console.log('hererer')
+    // If not found in cache, fetch from MongoDB
+    const product = await Product.findById(id).lean(); // Use .lean() for faster queries without Mongoose documents
+    
+    if (product) {
+      // Cache the product data in Redis, set expiration time (e.g., 1 hour)
+      await redisClient.set(cacheKey, JSON.stringify(product), { EX: 3600 });
+    }
+
+    return product;
   } catch (error) {
     handleDbError(error);
     return null;
   }
 };
+
 
 // Creates a new product in the database
 export const createProduct = async (

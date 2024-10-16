@@ -58,6 +58,9 @@ Make sure you have the following installed on your machine:
     MONGO_URI="YOUR_MONGO_URI"
     JWT_SECRET="YOUR_SECRET_KEY"
     JWT_EXPIRES_IN=1d
+    REDIS_PASSWORD="REDIS_PASSWORD"
+    REDIS_HOST="REDIS_HOST"
+    REDIS_PORT=REDIS_PORT
    ```
 
 3. Run the following command to install all required dependencies:
@@ -102,27 +105,34 @@ npm test
 ```
 
 ## Troubleshooting
+
 1. **Server not starting**
+
    - **Error Message**: `Error: listen EADDRINUSE: address already in use ::1:5000`
      - **Solution**: Ensure that another instance of the server or another application is not running on the same port (5000). You can change the port in your `.env` file or terminate the process using the port.
 
 2. **Database connection issues**
+
    - **Error Message**: `MongoNetworkError: failed to connect to server`
      - **Solution**: Verify that your MongoDB URI is correct in the `.env` file. Make sure the MongoDB service is running, and you have access permissions to the database.
 
 3. **JWT Authentication failed**
+
    - **Error Message**: `JsonWebTokenError: invalid signature`
      - **Solution**: Ensure that your JWT_SECRET in the `.env` file is correctly set. If you recently changed it, all previously issued tokens will be invalid.
 
 4. **Missing Environment Variables**
+
    - **Error Message**: `TypeError: Cannot read property 'PORT' of undefined`
      - **Solution**: Ensure that your `.env` file exists and contains all the necessary environment variables. Restart the server after making changes.
 
 5. **Server Errors**
+
    - **Error Message**: `You encounter a 500 Internal Server Error when accessing certain endpoints.`
      - **Solution**: Check the server logs for more specific error messages that can guide you in diagnosing the issue.
 
 6. **Authentication Failures**
+
    - **Error Message**: `401 Unauthorized`
      - **Solution**: Ensure you are including the JWT token in the Authorization header as Bearer YOUR_JWT_TOKEN
 
