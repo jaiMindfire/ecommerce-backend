@@ -11,7 +11,7 @@ import {
   massAddItemsToCart,
   checkoutService,
 } from "@services/cartService";
-import { CART_MESSAGES } from "src/Contans";
+import { CART_MESSAGES } from "src/Contants";
 
 //get the current authenticated user's cart items
 export const getCart = async (

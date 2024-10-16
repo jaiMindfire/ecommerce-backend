@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { AUTH_MESSAGES } from "src/Contans";
+import { AUTH_MESSAGES } from "src/Contants";
 
 dotenv.config();
 

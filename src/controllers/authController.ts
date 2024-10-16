@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 // Static Imports
 import { registerUser, loginUser } from "@services/userService";
-import { LOGIN_MESSAGES } from "src/Contans";
+import { LOGIN_MESSAGES } from "src/Contants";
 
 //register function to handle user registration
 export const register = async (

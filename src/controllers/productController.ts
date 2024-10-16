@@ -12,7 +12,7 @@ import {
   searchProducts,
   getCategories,
 } from "@services/productService";
-import { PRODUCT_MESSAGES } from "src/Contans";
+import { PRODUCT_MESSAGES } from "src/Contants";
 
 
 // Get the products list according to pagination, search, and filters.
