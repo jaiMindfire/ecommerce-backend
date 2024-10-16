@@ -49,6 +49,6 @@ const ProductSchema: Schema<IProduct> = new mongoose.Schema(
   { timestamps: true }
 );
 
-ProductSchema.index({ name: "text", description: "text" });
+ProductSchema.index({ name: "text", description: "text" }); // Create a text index on the 'name' and 'description' fields for full-text search capabilities
 
 export const Product = mongoose.model<IProduct>("Product", ProductSchema);
