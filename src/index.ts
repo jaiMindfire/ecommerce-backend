@@ -9,6 +9,8 @@ import productRoutes from "./routes/productRoutes";
 import cartRoutes from "./routes/cartRoutes";
 import { errorHandler } from "./middlewares/errorHandler";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSetup } from "./swagger";
 
 dotenv.config();
 
@@ -28,6 +30,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 
 app.use(errorHandler);
+
+swaggerSetup(app)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
