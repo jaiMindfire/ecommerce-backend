@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { DATABASE_ERROR_MESSAGE, DATABASE_SUCCESS_MESSAGE } from "src/Contans";
+import { DATABASE_ERROR_MESSAGE, DATABASE_SUCCESS_MESSAGE } from "src/Contants";
 
 dotenv.config(); // Load environment variables from .env file into process.env
 
