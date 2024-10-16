@@ -1,7 +1,7 @@
-//3rd Party Imports
+// 3rd Party Imports
 import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
-//Static Imports
+// Static Imports
 import {
   getCartByUserId,
   addToCart,
@@ -11,6 +11,7 @@ import {
   massAddItemsToCart,
   checkoutService,
 } from "@services/cartService";
+import { CART_MESSAGES } from "src/Contans";
 
 //get the current authenticated user's cart items
 export const getCart = async (
@@ -20,7 +21,7 @@ export const getCart = async (
 ) => {
   try {
     const cart = await getCartByUserId(req.userData.id);
-    if (!cart) return res.status(404).json({ message: "Cart not found" });
+    if (!cart) return res.status(404).json({ message: CART_MESSAGES.cartNotFound });
     res.json(cart);
   } catch (error) {
     next(error);
@@ -48,7 +49,7 @@ export const addItemToCart = async (
       quantity,
     });
     res.status(200).json({
-      message: "Item added to cart",
+      message: CART_MESSAGES.itemAdded,
       cart,
       success: true,
     });
@@ -78,7 +79,7 @@ export const updateCart = async (
     });
 
     res.json({
-      message: "Cart updated successfully",
+      message: CART_MESSAGES.cartUpdated,
       cart,
     });
   } catch (error) {
@@ -97,7 +98,7 @@ export const removeItemFromCart = async (
     const cart = await removeCartItem(req.userData.id, productId);
 
     res.json({
-      message: "Item removed from cart",
+      message: CART_MESSAGES.itemRemoved,
       cart,
     });
   } catch (error) {
@@ -113,7 +114,7 @@ export const checkoutCart = async (
 ) => {
   try {
     await checkoutService(req.userData.id);
-    res.status(200).json({ message: "Checkout completed successfully" });
+    res.status(200).json({ message: CART_MESSAGES.checkoutSuccess });
   } catch (error) {
     next(error);
   }
@@ -128,14 +129,14 @@ export const massAddToCart = async (req: Request, res: Response) => {
     const updatedCart = await massAddItemsToCart(userId, items);
     res.status(200).json({
       success: true,
-      message: "Cart updated successfully",
+      message: CART_MESSAGES.cartUpdatedBulk,
       data: updatedCart,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "An error occurred while updating the cart",
+      message: CART_MESSAGES.cartUpdateError,
     });
   }
 };

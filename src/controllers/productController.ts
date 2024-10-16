@@ -12,6 +12,8 @@ import {
   searchProducts,
   getCategories,
 } from "@services/productService";
+import { PRODUCT_MESSAGES } from "src/Contans";
+
 
 // Get the products list according to pagination, search, and filters.
 export const getProducts = async (
@@ -57,7 +59,7 @@ export const getProducts = async (
       },
     });
   } catch (error) {
-    next(error); // Handle errors, this will send erorrs to error handling middleware.
+    next(error); // Handle errors, this will send errors to error handling middleware.
   }
 };
 
@@ -69,7 +71,7 @@ export const getProduct = async (
 ) => {
   try {
     const product = await getProductById(req.params.id); // Fetch product by ID
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: PRODUCT_MESSAGES.productNotFound });
 
     res.json(product); // Respond with product data
   } catch (error) {
@@ -91,7 +93,7 @@ export const createNewProduct = async (
 
     const product = await createProduct(req.body); 
     res.status(201).json({
-      message: "Product created successfully",
+      message: PRODUCT_MESSAGES.productCreated,
       product,
     });
   } catch (error) {
@@ -107,10 +109,10 @@ export const updateProductController = async (
 ) => {
   try {
     const product = await updateProduct(req.params.id, req.body); // Update the product
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: PRODUCT_MESSAGES.productNotFound });
 
     res.json({
-      message: "Product updated successfully",
+      message: PRODUCT_MESSAGES.productUpdated,
       product,
     });
   } catch (error) {
@@ -126,9 +128,9 @@ export const deleteProductController = async (
 ) => {
   try {
     const product = await deleteProduct(req.params.id); 
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: PRODUCT_MESSAGES.productNotFound });
 
-    res.json({ message: "Product deleted successfully" });
+    res.json({ message: PRODUCT_MESSAGES.productDeleted });
   } catch (error) {
     next(error); 
   }
@@ -143,7 +145,7 @@ export const searchProductController = async (
   try {
     const query = req.query.q as string; // Get search query
     if (!query) {
-      return res.status(400).json({ message: "Search query is required" });
+      return res.status(400).json({ message: PRODUCT_MESSAGES.searchQueryRequired });
     }
 
     const products = await searchProducts(query);

@@ -1,8 +1,9 @@
-//3rd Party Imports
+// 3rd Party Imports
 import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
-//Static Imports
+// Static Imports
 import { registerUser, loginUser } from "@services/userService";
+import { LOGIN_MESSAGES } from "src/Contans";
 
 //register function to handle user registration
 export const register = async (
@@ -22,7 +23,7 @@ export const register = async (
     const user = await registerUser(req.body);
     // Respond with a 201 status and the user details
     res.status(201).json({
-      message: "User registered successfully",
+      message: LOGIN_MESSAGES.userRegistered,
       user: {
         id: user._id,
         username: user.username,
@@ -54,7 +55,7 @@ export const login = async (
     const data = await loginUser(req.body);
     // Respond with a 200 status and token/user information
     res.status(200).json({
-      message: "Logged in successfully",
+      message: LOGIN_MESSAGES.loginSuccess,
       token: data.token,
       success: true,
       userName: data.userName,

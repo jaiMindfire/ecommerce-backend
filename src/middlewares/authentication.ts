@@ -1,7 +1,8 @@
-//3rd Party Imports
+// 3rd Party Imports
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { AUTH_MESSAGES } from "src/Contans";
 
 dotenv.config();
 
@@ -32,7 +33,7 @@ export const authenticateJWT = (
 
   // Check if the Authorization header is present and starts with "Bearer " and responsd with 401 if missing
   if (!authHeader || !authHeader.startsWith("Bearer "))
-    return res.status(401).json({ message: "Authorization token missing" });
+    return res.status(401).json({ message: AUTH_MESSAGES.authTokenMissing });
 
   const token = authHeader.split(" ")[1];
 
@@ -42,9 +43,9 @@ export const authenticateJWT = (
       token,
       process.env.JWT_SECRET as string
     ) as JwtPayload;
-    req.userData = decoded; // Attach decoded user data to the request object and this userData will be available for further middleware.
+    req.userData = decoded; // Attach decoded user data to the request object, and this userData will be available for further middleware.
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid or expired token" });
+    res.status(401).json({ message: AUTH_MESSAGES.invalidOrExpiredToken });
   }
 };
