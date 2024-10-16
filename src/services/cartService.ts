@@ -1,6 +1,6 @@
 // 3rd Party Imports
 import mongoose from "mongoose";
-
+import { Worker } from 'worker_threads';
 // Static Imports
 import { Cart, ICart } from "@models/Cart";
 import { Product } from "@models/Product";
@@ -159,22 +159,29 @@ export const massAddItemsToCart = async (userId: string, items: CartItem[]) => {
     if (!cart) {
       cart = new Cart({ user: userId, items: [] });
     }
-    const existingProductIds = cart.items.map((item) =>
-      item.product.toString()
-    );
-    // Filters out items that are already in the cart.
-    const newItems = items.filter(
-      (item) => !existingProductIds.includes(item.product._id)
-    );
+    const existingProductIds = cart.items.map((item) => item.product.toString());
 
-    if (newItems.length) {
-      newItems.forEach((item) => {
-        cart.items.push({
-          product: item.product._id,
-          quantity: item.quantity,
-        });
+    // Offload filtering to a worker thread
+    const worker = new Worker('./src/utils/cartWorker.ts');
+    const workerPayload = { existingProductIds, newItems: items };
+
+    const filteredItems: any = await new Promise((resolve, reject) => {
+      worker.postMessage({ type: 'filterItems', payload: workerPayload });
+      worker.on('message', (message) => {
+        if (message.type === 'filteredItems') {
+          resolve(message.payload);
+        }
       });
-    }
+      worker.on('error', reject);
+    });
+
+    // Push filtered items into the cart
+    filteredItems.forEach((item: any) => {
+      cart.items.push({
+        product: item.product._id,
+        quantity: item.quantity,
+      });
+    });
 
     await cart.save();
     return cart;
