@@ -1,11 +1,12 @@
 // 3rd Party Imports
 import mongoose from "mongoose";
-import { Worker } from 'worker_threads';
+import { Worker } from "worker_threads";
 // Static Imports
 import { Cart, ICart } from "@models/Cart";
 import { Product } from "@models/Product";
 import { handleDbError } from "@utils/databaseErrorHandler";
 import { CustomError } from "@utils/customError";
+import { redisClient } from "src/config/redis";
 
 interface AddToCartInput {
   userId: string;
@@ -159,20 +160,22 @@ export const massAddItemsToCart = async (userId: string, items: CartItem[]) => {
     if (!cart) {
       cart = new Cart({ user: userId, items: [] });
     }
-    const existingProductIds = cart.items.map((item) => item.product.toString());
+    const existingProductIds = cart.items.map((item) =>
+      item.product.toString()
+    );
 
     // Offload filtering to a worker thread
-    const worker = new Worker('./src/utils/cartWorker.ts');
+    const worker = new Worker("./src/utils/cartWorker.ts");
     const workerPayload = { existingProductIds, newItems: items };
 
     const filteredItems: any = await new Promise((resolve, reject) => {
-      worker.postMessage({ type: 'filterItems', payload: workerPayload });
-      worker.on('message', (message) => {
-        if (message.type === 'filteredItems') {
+      worker.postMessage({ type: "filterItems", payload: workerPayload });
+      worker.on("message", (message) => {
+        if (message.type === "filteredItems") {
           resolve(message.payload);
         }
       });
-      worker.on('error', reject);
+      worker.on("error", reject);
     });
 
     // Push filtered items into the cart
@@ -230,7 +233,8 @@ export const checkoutService = async (userId: string): Promise<void> => {
           400
         );
       }
-
+      const cacheKey = `product:${product._id}`;
+      await redisClient.del(cacheKey);
       bulkOperations.push({
         updateOne: {
           filter: { _id: product._id },

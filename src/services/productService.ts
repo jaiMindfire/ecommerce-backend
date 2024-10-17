@@ -38,7 +38,6 @@ export const getAllProducts = async (
     const cachedProducts = await redisClient.get(cacheKey);
     
     if (cachedProducts) {
-      console.log('cached')
       return JSON.parse(cachedProducts); // Return cached products if found
     }
 
@@ -47,26 +46,27 @@ export const getAllProducts = async (
 
     if (search) {
       match.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { name: { $regex: search, $options: "i" } },  // Search for name
+        { description: { $regex: search, $options: "i" } }, //Search for description
       ];
     }
     if (minPrice || maxPrice) {
       match.price = {};
-      if (minPrice) match.price.$gte = minPrice;
-      if (maxPrice) match.price.$lte = maxPrice;
+      if (minPrice) match.price.$gte = minPrice; // Greater than equal to minPrice
+      if (maxPrice) match.price.$lte = maxPrice; // Less than equal to maxPrice
     }
     if (minRating) {
-      match.rating = { $gte: minRating };
+      match.rating = { $gte: minRating };// Greater than and equal to minRating
     }
     if (categories && categories.length > 0) {
-      match.category = { $in: categories };
+      match.category = { $in: categories }; // In the list of categories
     }
 
     const pipeline: PipelineStage[] = [
       { $match: match },
-      { $sort: { price: -1 } },
-      { $skip: skip },
+      { $sort: { price: -1 } }, // Sort the list
+      // Pagination
+      { $skip: skip }, 
       { $limit: limit },
     ];
 
