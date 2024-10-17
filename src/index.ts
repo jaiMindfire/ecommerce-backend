@@ -6,14 +6,14 @@ import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 // Static Imports
-import connectDB from "./config/database";
+import { connectDB } from "./config/database";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import productRoutes from "./routes/productRoutes";
 import cartRoutes from "./routes/cartRoutes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { swaggerSetup } from "./swagger";
-import connectRedis from "./config/redis";
+import { connectRedis } from "./config/redis";
 
 dotenv.config();
 
@@ -83,8 +83,8 @@ swaggerSetup(app);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app;
+export {app, server};
