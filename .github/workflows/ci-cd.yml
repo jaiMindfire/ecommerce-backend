@@ -32,15 +32,8 @@ jobs:
           REDIS_PORT: ${{ secrets.REDIS_PORT }}
         run: npm test
 
-      - name: Deploy to Production
+      - name: Deploy to Render (Main)
         if: github.ref == 'refs/heads/main'
-        env:
-          PORT: ${{ secrets.PORT }}
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PORT: ${{ secrets.REDIS_PORT }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_MAIN }}
+          
