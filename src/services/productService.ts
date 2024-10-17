@@ -35,7 +35,12 @@ export const getAllProducts = async (
     const cacheKey = `products:page=${page}&limit=${limit}&search=${search}&minPrice=${minPrice}&maxPrice=${maxPrice}&minRating=${minRating}&categories=${categories?.join(',')}`;
     
     // Try to get cached data
-    const cachedProducts = await redisClient.get(cacheKey);
+    try{
+      const cachedProducts = await redisClient.get(cacheKey);
+    }
+    catch (error){
+      console.log('redis error')
+    }
     
     // if (cachedProducts) {
     //   return JSON.parse(cachedProducts); // Return cached products if found
@@ -76,7 +81,12 @@ export const getAllProducts = async (
     const totalItems = totalItemsResult[0]?.count || 0;
 
     // Cache the product list and total items for the given query
-    await redisClient.set(cacheKey, JSON.stringify({ products, totalItems }), { EX: 3600 }); // Cache expires after 1 hour
+    try{
+      await redisClient.set(cacheKey, JSON.stringify({ products, totalItems }), { EX: 3600 }); // Cache expires after 1 hour
+    }
+    catch (error){
+      console.log('redis error')
+    }
 
     return { products, totalItems };
   } catch (error) {
@@ -92,7 +102,13 @@ export const getProductById = async (id: string): Promise<IProduct | null> => {
     const cacheKey = `product:${id}`; // Create a cache key for Redis
 
     // Try to get the product from Redis
-    const cachedProduct = await redisClient.get(cacheKey);
+    let cachedProduct: any
+   try{
+    cachedProduct = await redisClient.get(cacheKey);
+   }
+   catch{
+    console.log('redis error')
+   }
     
     if (cachedProduct) {
       console.log('cahched prd')
@@ -104,7 +120,12 @@ export const getProductById = async (id: string): Promise<IProduct | null> => {
     
     if (product) {
       // Cache the product data in Redis, set expiration time (e.g., 1 hour)
-      await redisClient.set(cacheKey, JSON.stringify(product), { EX: 3600 });
+      try{
+        await redisClient.set(cacheKey, JSON.stringify(product), { EX: 3600 });
+      }
+      catch{
+        console.log('redis error')
+      }
     }
 
     return product;

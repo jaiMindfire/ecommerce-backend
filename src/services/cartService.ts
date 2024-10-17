@@ -234,7 +234,12 @@ export const checkoutService = async (userId: string): Promise<void> => {
         );
       }
       const cacheKey = `product:${product._id}`;
-      await redisClient.del(cacheKey);
+      try{
+        await redisClient.del(cacheKey);
+      }
+      catch{
+        console.log('redis error')
+      }
       bulkOperations.push({
         updateOne: {
           filter: { _id: product._id },
