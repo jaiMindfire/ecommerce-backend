@@ -39,5 +39,5 @@ const ProductSchema = new mongoose_1.default.Schema({
     },
     rating: { type: Number, required: true, min: 1, max: 5 },
 }, { timestamps: true });
-ProductSchema.index({ name: "text", description: "text" });
+ProductSchema.index({ name: "text", description: "text" }); // Create a text index on the 'name' and 'description' fields for full-text search capabilities
 exports.Product = mongoose_1.default.model("Product", ProductSchema);

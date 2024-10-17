@@ -9,7 +9,7 @@ const authentication_1 = require("../middlewares/authentication");
 const authorization_1 = require("../middlewares/authorization");
 const express_validator_1 = require("express-validator");
 const router = express_1.default.Router();
-router.use(authentication_1.authenticateJWT, (0, authorization_1.authorizeRoles)(["admin"]));
+router.use(authentication_1.authenticateJWT, (0, authorization_1.authorizeRoles)(["admin"])); //Only logged in admin user can perform all these opeartions.
 // @route   GET /api/users
 // @desc    Get all users
 // @access  Admin

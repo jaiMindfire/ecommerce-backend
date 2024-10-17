@@ -13,25 +13,33 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
-const index_1 = __importDefault(require("../index"));
+const index_1 = require("../../src/index");
+const User_1 = require("../models/User");
 const Product_1 = require("../models/Product");
-const database_1 = __importDefault(require("../config/database"));
+const database_1 = require("src/config/database");
+const redis_1 = require("src/config/redis");
 let mongoServer;
 let token;
 beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, database_1.default)();
+    yield (0, database_1.connectDB)();
     yield Product_1.Product.deleteMany({});
+    yield User_1.User.deleteOne({ email: "jai@example.com" });
+}));
+afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, database_1.closeDB)();
+    yield (0, redis_1.closeRedis)();
+    index_1.server.close();
 }));
 describe("Authentication & Product Cart Flow", () => {
     it("should log in a user and return a token", () => __awaiter(void 0, void 0, void 0, function* () {
         // First register a user
-        yield (0, supertest_1.default)(index_1.default).post("/api/auth/register").send({
+        yield (0, supertest_1.default)(index_1.app).post("/api/auth/register").send({
             username: "Jai Bajpai",
             email: "jai@example.com",
             password: "password123",
         });
         // Now log in the user
-        const res = yield (0, supertest_1.default)(index_1.default)
+        const res = yield (0, supertest_1.default)(index_1.app)
             .post("/api/auth/login")
             .send({
             email: "jai@example.com",
@@ -50,11 +58,13 @@ describe("Authentication & Product Cart Flow", () => {
             name: "Test Product",
             price: 100,
             description: "A test product",
+            rating: "4",
+            category: "test",
             stock: 10,
             imageUrl: "https://images.samsung.com/is/image/samsung/in-full-hd-tv-te50fa-ua43te50fakxxl-frontblack-231881877?$650_519_PNG$",
         });
         // Now, attempt to add the product to the cart (protected route)
-        const res = yield (0, supertest_1.default)(index_1.default)
+        const res = yield (0, supertest_1.default)(index_1.app)
             .post("/api/cart")
             .set("Authorization", `Bearer ${token}`)
             .send({
@@ -73,11 +83,13 @@ describe("Authentication & Product Cart Flow", () => {
             name: "Test Product",
             price: 100,
             description: "A test product",
+            rating: "4",
+            category: "test",
             stock: 10,
             imageUrl: "https://images.samsung.com/is/image/samsung/in-full-hd-tv-te50fa-ua43te50fakxxl-frontblack-231881877?$650_519_PNG$",
         });
         // Try to add product to cart without authentication
-        yield (0, supertest_1.default)(index_1.default)
+        yield (0, supertest_1.default)(index_1.app)
             .post("/api/cart")
             .send({
             productId: product._id,
@@ -90,22 +102,22 @@ describe("Authentication & Product Cart Flow", () => {
         // Insert mock products into the database
         const mockProducts = [
             {
-                name: "Samsung 50\" 4K UHD Smart TV",
+                name: 'Samsung 50" 4K UHD Smart TV',
                 price: 499.99,
                 description: "Experience vivid colors and stunning clarity with this Samsung 50-inch 4K UHD Smart TV.",
                 stock: 50,
                 imageUrl: "https://images.samsung.com/is/image/samsung/p6pim/in/ua50cu7700klxl/gallery/in-crystal-uhd-cu7000-ua50cu7700klxl-535859786?$650_519_PNG$",
                 category: "Electronics",
-                rating: 3.5
+                rating: 3.5,
             },
             {
                 name: "Apple AirPods Pro",
-                price: 249.00,
+                price: 249.0,
                 description: "Active Noise Cancellation for immersive sound. Transparency mode for hearing the world around you.",
                 stock: 150,
                 imageUrl: "https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/airpods-pro-2-hero-select-202409_FV1_FMT_WHH?wid=752&hei=636&fmt=jpeg&qlt=90&.v=1725492498882",
                 category: "Wearables",
-                rating: 1.8
+                rating: 1.8,
             },
             {
                 name: "Sony WH-1000XM4 Headphones",
@@ -114,7 +126,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 75,
                 imageUrl: "https://www.sony.co.in/image/5d02da5df552836db894cead8a68f5f3?fmt=pjpeg&wid=330&bgcolor=FFFFFF&bgc=FFFFFF",
                 category: "Wearables",
-                rating: 2.7
+                rating: 2.7,
             },
             {
                 name: "Dell XPS 13 Laptop",
@@ -123,7 +135,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 30,
                 imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2cQwstUj0Kmwg6aFZL8hBYoawo3e6frmYHg&s",
                 category: "Laptops",
-                rating: 3.6
+                rating: 3.6,
             },
             {
                 name: "Fitbit Charge 5",
@@ -132,16 +144,16 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 100,
                 imageUrl: "https://www.fitbit.com/global/content/dam/fitbit/global/pdp/devices/charge-5/images/desktop/features-cover-charge5-21.jpg",
                 category: "Wearables",
-                rating: 2.4
+                rating: 2.4,
             },
             {
                 name: "Canon EOS Rebel T7 DSLR Camera",
-                price: 499.00,
+                price: 499.0,
                 description: "Beginner-friendly DSLR camera with built-in Wi-Fi and Full HD video.",
                 stock: 40,
                 imageUrl: "https://m.media-amazon.com/images/I/71Is-Zv6A0L._AC_SX679_.jpg",
                 category: "Cameras",
-                rating: 4.2
+                rating: 4.2,
             },
             {
                 name: "Samsung Galaxy S21",
@@ -150,7 +162,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 60,
                 imageUrl: "https://images-cdn.ubuy.co.in/65e052459f1bf005e26a62a7-samsung-galaxy-s21-5g-g996u-128gb.jpg",
                 category: "Smartphones",
-                rating: 4.6
+                rating: 4.6,
             },
             {
                 name: "Amazon Echo Dot (4th Gen)",
@@ -159,7 +171,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 200,
                 imageUrl: "https://m.media-amazon.com/images/I/81WaomQESKL._AC_UF894,1000_QL80_.jpg",
                 category: "Smart Home Devices",
-                rating: 4.3
+                rating: 4.3,
             },
             {
                 name: "JBL Charge 5 Portable Speaker",
@@ -168,7 +180,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 85,
                 imageUrl: "https://www.vplak.com/images/jbl/JBL-CHARGE-5/black/image-1.jpg",
                 category: "Speakers",
-                rating: 4.5
+                rating: 4.5,
             },
             {
                 name: "GoPro HERO10 Black",
@@ -177,7 +189,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 45,
                 imageUrl: "https://m.media-amazon.com/images/I/61A31TlXnuL._AC_UF1000,1000_QL80_.jpg",
                 category: "Cameras",
-                rating: 1.7
+                rating: 1.7,
             },
             {
                 name: "Nikon D3500 DSLR Camera",
@@ -186,16 +198,16 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 35,
                 imageUrl: "https://rukminim2.flixcart.com/image/850/1000/jmjhifk0/dslr-camera/f/g/t/na-d3500-nikon-original-imaf9fkfv5xqdheq.jpeg?q=20&crop=false",
                 category: "Cameras",
-                rating: 4.3
+                rating: 4.3,
             },
             {
                 name: "Apple Watch Series 7",
-                price: 399.00,
+                price: 399.0,
                 description: "Stay connected and healthy with the latest Apple Watch.",
                 stock: 120,
                 imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAML-SZB3WrH_uffWnDTD7KMMVxDTXbrySjg&s",
                 category: "Wearables",
-                rating: 4.8
+                rating: 4.8,
             },
             {
                 name: "Microsoft Surface Pro 7",
@@ -204,7 +216,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 25,
                 imageUrl: "https://news.microsoft.com/wp-content/uploads/prod/sites/45/2021/02/microsoft-surface-pro-7-plus-1.jpg",
                 category: "Laptops",
-                rating: 4.7
+                rating: 4.7,
             },
             {
                 name: "Razer DeathAdder V2 Gaming Mouse",
@@ -213,7 +225,7 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 150,
                 imageUrl: "https://www.pcstudio.in/wp-content/uploads/2022/09/Razer-DeathAdder-V2-X-HyperSpeed-Wireless-Gaming-Mouse-Black-1.webp",
                 category: "Gaming",
-                rating: 4.4
+                rating: 4.4,
             },
             {
                 name: "HP Envy 13 Laptop",
@@ -222,21 +234,21 @@ describe("Authentication & Product Cart Flow", () => {
                 stock: 20,
                 imageUrl: "https://m.media-amazon.com/images/I/71N9fpppW8L.jpg",
                 category: "Laptops",
-                rating: 4.6
+                rating: 4.6,
             },
             {
                 name: "Oculus Quest 2 VR Headset",
-                price: 299.00,
+                price: 299.0,
                 description: "All-in-one VR headset with a library of immersive games and experiences.",
                 stock: 90,
                 imageUrl: "https://images-cdn.ubuy.co.in/65e6ac9c2c174f351c1311f6-oculus-quest-2-advanced-all-in-one.jpg",
                 category: "Gaming",
-                rating: 2.8
-            }
+                rating: 2.8,
+            },
         ];
         yield Product_1.Product.insertMany(mockProducts);
         // Make the request to the API with pagination params
-        const res = yield (0, supertest_1.default)(index_1.default)
+        const res = yield (0, supertest_1.default)(index_1.app)
             .get("/api/products")
             .query({ page: 1, limit: 2 })
             .expect(200);

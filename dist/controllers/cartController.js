@@ -10,13 +10,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.massAddToCart = exports.checkoutCart = exports.removeItemFromCart = exports.updateCart = exports.addItemToCart = exports.getCart = void 0;
-const cartService_1 = require("../services/cartService");
 const express_validator_1 = require("express-validator");
+// Static Imports
+const cartService_1 = require("@services/cartService");
+const Contants_1 = require("src/Contants");
+//get the current authenticated user's cart items
 const getCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const cart = yield (0, cartService_1.getCartByUserId)(req.userData.id);
         if (!cart)
-            return res.status(404).json({ message: "Cart not found" });
+            return res.status(404).json({ message: Contants_1.CART_MESSAGES.cartNotFound });
         res.json(cart);
     }
     catch (error) {
@@ -24,10 +27,13 @@ const getCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getCart = getCart;
+// Add an item to the cart
 const addItemToCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        // Check for validation errors in the request
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
+            // If there are errors, return a 400 status with the errors
             return res.status(400).json({ errors: errors.array() });
         }
         const { productId, quantity } = req.body;
@@ -37,7 +43,7 @@ const addItemToCart = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             quantity,
         });
         res.status(200).json({
-            message: "Item added to cart",
+            message: Contants_1.CART_MESSAGES.itemAdded,
             cart,
             success: true,
         });
@@ -47,8 +53,10 @@ const addItemToCart = (req, res, next) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.addItemToCart = addItemToCart;
+// Update an item in the cart
 const updateCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        // Check for validation errors in the request
         const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -60,7 +68,7 @@ const updateCart = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             quantity,
         });
         res.json({
-            message: "Cart updated successfully",
+            message: Contants_1.CART_MESSAGES.cartUpdated,
             cart,
         });
     }
@@ -69,12 +77,13 @@ const updateCart = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.updateCart = updateCart;
+// Remove an item from the cart
 const removeItemFromCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { productId } = req.params;
         const cart = yield (0, cartService_1.removeCartItem)(req.userData.id, productId);
         res.json({
-            message: "Item removed from cart",
+            message: Contants_1.CART_MESSAGES.itemRemoved,
             cart,
         });
     }
@@ -83,16 +92,18 @@ const removeItemFromCart = (req, res, next) => __awaiter(void 0, void 0, void 0,
     }
 });
 exports.removeItemFromCart = removeItemFromCart;
+// Controller for doing checkout flow
 const checkoutCart = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield (0, cartService_1.checkoutService)(req.userData.id);
-        res.status(200).json({ message: "Checkout completed successfully" });
+        res.status(200).json({ message: Contants_1.CART_MESSAGES.checkoutSuccess });
     }
     catch (error) {
         next(error);
     }
 });
 exports.checkoutCart = checkoutCart;
+//Add items to cart in bulk
 const massAddToCart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { items } = req.body;
     const userId = req.userData.id;
@@ -100,7 +111,7 @@ const massAddToCart = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const updatedCart = yield (0, cartService_1.massAddItemsToCart)(userId, items);
         res.status(200).json({
             success: true,
-            message: "Cart updated successfully",
+            message: Contants_1.CART_MESSAGES.cartUpdatedBulk,
             data: updatedCart,
         });
     }
@@ -108,7 +119,7 @@ const massAddToCart = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         console.error(error);
         res.status(500).json({
             success: false,
-            message: "An error occurred while updating the cart",
+            message: Contants_1.CART_MESSAGES.cartUpdateError,
         });
     }
 });

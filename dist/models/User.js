@@ -40,6 +40,7 @@ const UserSchema = new mongoose_1.default.Schema({
         default: "user",
     },
 }, { timestamps: true });
+//middleware to hash the password before saving to the database
 UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!this.isModified("password"))
@@ -54,9 +55,10 @@ UserSchema.pre("save", function (next) {
         }
     });
 });
+// Method to compare provided password with the hashed password in the database
 UserSchema.methods.comparePassword = function (password) {
     return __awaiter(this, void 0, void 0, function* () {
-        return bcryptjs_1.default.compare(password, this.password);
+        return bcryptjs_1.default.compare(password, this.password); // Compare passwords and return result
     });
 };
 exports.User = mongoose_1.default.model("User", UserSchema);
