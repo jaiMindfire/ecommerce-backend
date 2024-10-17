@@ -12,6 +12,7 @@ let token: string;
 beforeAll(async () => {
   await connectDB();
   await Product.deleteMany({});
+  await User.deleteOne({email: "jai@example.com"})
 });
 
 
@@ -45,6 +46,8 @@ describe("Authentication & Product Cart Flow", () => {
       name: "Test Product",
       price: 100,
       description: "A test product",
+      rating: "4",
+      category: "test",
       stock: 10,
       imageUrl:
         "https://images.samsung.com/is/image/samsung/in-full-hd-tv-te50fa-ua43te50fakxxl-frontblack-231881877?$650_519_PNG$",
@@ -74,6 +77,8 @@ describe("Authentication & Product Cart Flow", () => {
       name: "Test Product",
       price: 100,
       description: "A test product",
+      rating: "4",
+      category: "test",
       stock: 10,
       imageUrl:
         "https://images.samsung.com/is/image/samsung/in-full-hd-tv-te50fa-ua43te50fakxxl-frontblack-231881877?$650_519_PNG$",

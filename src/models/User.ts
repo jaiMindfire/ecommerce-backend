@@ -38,6 +38,7 @@ const UserSchema: Schema<IUser> = new mongoose.Schema(
   { timestamps: true }
 );
 
+//middleware to hash the password before saving to the database
 UserSchema.pre<IUser>("save", async function (next) {
   if (!this.isModified("password")) return next();
   try {
@@ -49,10 +50,11 @@ UserSchema.pre<IUser>("save", async function (next) {
   }
 });
 
+// Method to compare provided password with the hashed password in the database
 UserSchema.methods.comparePassword = async function (
   password: string
 ): Promise<boolean> {
-  return bcrypt.compare(password, this.password);
+  return bcrypt.compare(password, this.password); // Compare passwords and return result
 };
 
 export const User = mongoose.model<IUser>("User", UserSchema);

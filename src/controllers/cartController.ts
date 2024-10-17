@@ -1,4 +1,7 @@
+// 3rd Party Imports
 import { Request, Response, NextFunction } from "express";
+import { validationResult } from "express-validator";
+// Static Imports
 import {
   getCartByUserId,
   addToCart,
@@ -7,9 +10,10 @@ import {
   clearCart,
   massAddItemsToCart,
   checkoutService,
-} from "../services/cartService";
-import { validationResult } from "express-validator";
+} from "@services/cartService";
+import { CART_MESSAGES } from "src/Contants";
 
+//get the current authenticated user's cart items
 export const getCart = async (
   req: Request,
   res: Response,
@@ -17,22 +21,24 @@ export const getCart = async (
 ) => {
   try {
     const cart = await getCartByUserId(req.userData.id);
-    if (!cart) return res.status(404).json({ message: "Cart not found" });
-
+    if (!cart) return res.status(404).json({ message: CART_MESSAGES.cartNotFound });
     res.json(cart);
   } catch (error) {
     next(error);
   }
 };
 
+// Add an item to the cart
 export const addItemToCart = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
+    // Check for validation errors in the request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      // If there are errors, return a 400 status with the errors
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -43,7 +49,7 @@ export const addItemToCart = async (
       quantity,
     });
     res.status(200).json({
-      message: "Item added to cart",
+      message: CART_MESSAGES.itemAdded,
       cart,
       success: true,
     });
@@ -52,12 +58,14 @@ export const addItemToCart = async (
   }
 };
 
+// Update an item in the cart
 export const updateCart = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
+    // Check for validation errors in the request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -71,7 +79,7 @@ export const updateCart = async (
     });
 
     res.json({
-      message: "Cart updated successfully",
+      message: CART_MESSAGES.cartUpdated,
       cart,
     });
   } catch (error) {
@@ -79,6 +87,7 @@ export const updateCart = async (
   }
 };
 
+// Remove an item from the cart
 export const removeItemFromCart = async (
   req: Request,
   res: Response,
@@ -89,7 +98,7 @@ export const removeItemFromCart = async (
     const cart = await removeCartItem(req.userData.id, productId);
 
     res.json({
-      message: "Item removed from cart",
+      message: CART_MESSAGES.itemRemoved,
       cart,
     });
   } catch (error) {
@@ -97,6 +106,7 @@ export const removeItemFromCart = async (
   }
 };
 
+// Controller for doing checkout flow
 export const checkoutCart = async (
   req: Request,
   res: Response,
@@ -104,12 +114,13 @@ export const checkoutCart = async (
 ) => {
   try {
     await checkoutService(req.userData.id);
-    res.status(200).json({ message: "Checkout completed successfully" });
+    res.status(200).json({ message: CART_MESSAGES.checkoutSuccess });
   } catch (error) {
     next(error);
   }
 };
 
+//Add items to cart in bulk
 export const massAddToCart = async (req: Request, res: Response) => {
   const { items } = req.body;
   const userId = req.userData.id;
@@ -118,14 +129,14 @@ export const massAddToCart = async (req: Request, res: Response) => {
     const updatedCart = await massAddItemsToCart(userId, items);
     res.status(200).json({
       success: true,
-      message: "Cart updated successfully",
+      message: CART_MESSAGES.cartUpdatedBulk,
       data: updatedCart,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "An error occurred while updating the cart",
+      message: CART_MESSAGES.cartUpdateError,
     });
   }
 };

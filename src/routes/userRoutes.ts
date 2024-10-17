@@ -11,7 +11,7 @@ import { body } from "express-validator";
 
 const router = express.Router();
 
-router.use(authenticateJWT, authorizeRoles(["admin"]));
+router.use(authenticateJWT, authorizeRoles(["admin"])); //Only logged in admin user can perform all these opeartions.
 
 // @route   GET /api/users
 // @desc    Get all users
