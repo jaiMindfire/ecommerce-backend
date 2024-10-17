@@ -20,10 +20,15 @@ const getAllProducts = (page, limit, search, minPrice, maxPrice, minRating, cate
     try {
         const cacheKey = `products:page=${page}&limit=${limit}&search=${search}&minPrice=${minPrice}&maxPrice=${maxPrice}&minRating=${minRating}&categories=${categories === null || categories === void 0 ? void 0 : categories.join(',')}`;
         // Try to get cached data
-        const cachedProducts = yield redis_1.redisClient.get(cacheKey);
-        if (cachedProducts) {
-            return JSON.parse(cachedProducts); // Return cached products if found
+        try {
+            const cachedProducts = yield redis_1.redisClient.get(cacheKey);
         }
+        catch (error) {
+            console.log('redis error');
+        }
+        // if (cachedProducts) {
+        //   return JSON.parse(cachedProducts); // Return cached products if found
+        // }
         const skip = (page - 1) * limit;
         const match = {};
         if (search) {
@@ -57,7 +62,12 @@ const getAllProducts = (page, limit, search, minPrice, maxPrice, minRating, cate
         const totalItemsResult = yield Product_1.Product.aggregate(totalItemsPipeline).exec();
         const totalItems = ((_a = totalItemsResult[0]) === null || _a === void 0 ? void 0 : _a.count) || 0;
         // Cache the product list and total items for the given query
-        yield redis_1.redisClient.set(cacheKey, JSON.stringify({ products, totalItems }), { EX: 3600 }); // Cache expires after 1 hour
+        try {
+            yield redis_1.redisClient.set(cacheKey, JSON.stringify({ products, totalItems }), { EX: 3600 }); // Cache expires after 1 hour
+        }
+        catch (error) {
+            console.log('redis error');
+        }
         return { products, totalItems };
     }
     catch (error) {
@@ -71,7 +81,13 @@ const getProductById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const cacheKey = `product:${id}`; // Create a cache key for Redis
         // Try to get the product from Redis
-        const cachedProduct = yield redis_1.redisClient.get(cacheKey);
+        let cachedProduct;
+        try {
+            cachedProduct = yield redis_1.redisClient.get(cacheKey);
+        }
+        catch (_a) {
+            console.log('redis error');
+        }
         if (cachedProduct) {
             console.log('cahched prd');
             return JSON.parse(cachedProduct); // Return cached product if found
@@ -81,7 +97,12 @@ const getProductById = (id) => __awaiter(void 0, void 0, void 0, function* () {
         const product = yield Product_1.Product.findById(id).lean(); // Use .lean() for faster queries without Mongoose documents
         if (product) {
             // Cache the product data in Redis, set expiration time (e.g., 1 hour)
-            yield redis_1.redisClient.set(cacheKey, JSON.stringify(product), { EX: 3600 });
+            try {
+                yield redis_1.redisClient.set(cacheKey, JSON.stringify(product), { EX: 3600 });
+            }
+            catch (_b) {
+                console.log('redis error');
+            }
         }
         return product;
     }

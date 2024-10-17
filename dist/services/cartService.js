@@ -196,7 +196,12 @@ const checkoutService = (userId) => __awaiter(void 0, void 0, void 0, function* 
                 throw new customError_1.CustomError(`Insufficient stock for product: ${product.name}`, 400);
             }
             const cacheKey = `product:${product._id}`;
-            yield redis_1.redisClient.del(cacheKey);
+            try {
+                yield redis_1.redisClient.del(cacheKey);
+            }
+            catch (_a) {
+                console.log('redis error');
+            }
             bulkOperations.push({
                 updateOne: {
                     filter: { _id: product._id },
