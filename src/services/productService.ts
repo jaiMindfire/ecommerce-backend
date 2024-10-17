@@ -37,9 +37,9 @@ export const getAllProducts = async (
     // Try to get cached data
     const cachedProducts = await redisClient.get(cacheKey);
     
-    if (cachedProducts) {
-      return JSON.parse(cachedProducts); // Return cached products if found
-    }
+    // if (cachedProducts) {
+    //   return JSON.parse(cachedProducts); // Return cached products if found
+    // }
 
     const skip = (page - 1) * limit;
     const match: any = {};
