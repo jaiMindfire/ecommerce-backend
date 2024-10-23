@@ -5,6 +5,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import cookieParser from 'cookie-parser';
 // Static Imports
 import { connectDB } from "./config/database";
 import authRoutes from "./routes/authRoutes";
@@ -36,7 +37,7 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
 });
 
-// Apply rate limiting globally
+// // Apply rate limiting globally
 app.use(limiter);
 
 // Content Security Policy (CSP) via Helmet
@@ -65,6 +66,7 @@ app.use(
 app.use(cors());
 // Body parsing middlewares
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 // HTTP request logger
 app.use(morgan("dev"));

@@ -54,10 +54,17 @@ export const login = async (
     // Call the loginUser service with the request body
     const data = await loginUser(req.body);
     // Respond with a 200 status and token/user information
+    res.cookie("authToken", data.token, {
+      httpOnly: true, // Prevents client-side access to the cookie
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week expiration
+    });
+
+    // Respond with a 200 status and user information
     res.status(200).json({
       message: LOGIN_MESSAGES.loginSuccess,
-      token: data.token,
       success: true,
+      token: data.token,
       userName: data.userName,
     });
   } catch (error) {
